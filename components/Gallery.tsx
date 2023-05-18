@@ -28,6 +28,7 @@ export function Timeline(props: { images: TimelineImage[] }) {
         <li class="flex flex-col sm:items-center gap-2">
           <a href={`/user/${image.uid}/image/${image.id}`}>
             <img
+              style="image-rendering: pixelated;"
               width={220}
               class="mt-8 bg-white rounded shadow hover:shadow-lg transition-shadow w-full sm:w-[220px]"
               src={`/api/image/${image.uid}/${image.id}`}
