@@ -64,8 +64,7 @@ export const handler: Handlers<Data, State> = {
       return remove(user.id, ctx.params.id);
     }
     if (method === "EDIT") {
-      const { pathname } = new URL(req.url);
-      return Response.redirect("http://localhost:8000/edit/" + ctx.params.id);
+      return redirect("/edit/" + ctx.params.id);
     }
     return new Response("Bad Request", { status: 400 });
   },
