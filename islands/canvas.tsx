@@ -3,7 +3,7 @@ import { drawCircle, drawLine } from "🛠️/canvas.ts";
 import IconSend from "https://deno.land/x/tabler_icons_tsx@0.0.3/tsx/send.tsx";
 import IconTrash from "https://deno.land/x/tabler_icons_tsx@0.0.3/tsx/trash.tsx";
 
-export default function Canvas(props: { uid: string }) {
+export default function Canvas(props: { uid: string, imageId?: string }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [lastX, setLastX] = useState(0);
@@ -25,10 +25,21 @@ export default function Canvas(props: { uid: string }) {
   };
 
   useEffect(() => {
-    const canvas = canvasRef.current as HTMLCanvasElement;
-    const ctx = getContext(canvas);
-    ctx.fillStyle = pallete[pallete.length - 1];
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    (async () => {
+      const canvas = canvasRef.current as HTMLCanvasElement;
+      const ctx = getContext(canvas);
+      ctx.fillStyle = pallete[pallete.length - 1];
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      if (props.imageId) {
+        const blob = await (await fetch(`/api/image/${props.uid}/${props.imageId}`)).blob();
+        const img = new Image();
+        img.onload = () => {
+          ctx.drawImage(img, 0, 0);
+        }
+        img.src = URL.createObjectURL(blob);
+      }
+    })()
   }, []);
 
   const down = (e: PointerEvent) => {
@@ -83,6 +94,9 @@ export default function Canvas(props: { uid: string }) {
     const blob = await promise as Blob;
     const formData = new FormData();
     formData.append("image", blob);
+    if (props.imageId) {
+      formData.append("imageId", props.imageId);
+    }
     const res = await fetch("/api/image", {
       method: "POST",
       body: formData,
@@ -150,15 +164,25 @@ export default function Canvas(props: { uid: string }) {
     };
   }, [imageDataList]);
 
+  const penColorRef = useRef<HTMLInputElement>(null);
+
+  const changeColor = () => {
+    if (!penColorRef.current) return;
+    const element = document.getElementById("pen-color")
+    const value = element?.getAttribute("value");
+    setColor(penColorRef.current.value);
+  };
+
   return (
     <div>
       <div class="flex flex-col border-2 border-green-400 rounded shadow-xl">
+        <input type="color" value={color} ref={penColorRef} onChange={changeColor}></input>
         <canvas
           ref={canvasRef}
           class="bg-green-200 touch-none image-crisp"
           style="image-rendering: pixelated; touch-action: none;"
-          width={200}
-          height={200}
+          width={2000}
+          height={2000}
           onPointerDown={down}
           onPointerUp={up}
           onPointerMove={move}

@@ -4,6 +4,7 @@
  * synchronization between clients.
  */
 
+import { downloadImage, uploadToCloudinary } from "./cloudinary.ts";
 import { Image, OauthSession, TimelineImage, User } from "./types.ts";
 
 const kv = await Deno.openKv();
@@ -50,6 +51,40 @@ export async function deleteSession(session: string) {
   await kv.delete(["users_by_session", session]);
 }
 
+export async function updateImage(uid: string, id: string, data: File) {
+  const user = await getUserById(uid);
+  if (!user) throw new Error("user not found");
+
+  const prev = await kv.get<Image>(["images2", uid, id]);
+  if (!prev.value) throw new Error("image not found");
+
+  const body = new Uint8Array(await data.arrayBuffer());
+
+  // Cloudinaryにアップロード
+  const imageUrl = await uploadToCloudinary(body);
+
+  const image: Image = {
+    id,
+    uid,
+    // data: body,
+    url: imageUrl,
+    type: data.type,
+    createdAt: prev.value.createdAt,
+    updatedAt: new Date(),
+  };
+
+  await kv.set(["images", uid, id], image);
+
+  // const timelineImage: TimelineImage = {
+  //   id,
+  //   uid,
+  //   userName: user.name,
+  //   avatarUrl: user.avatarUrl,
+  //   createdAt: new Date(),
+  // };
+  // await kv.set(["timeline", id], timelineImage);
+}
+
 export async function addImage(uid: string, data: File) {
   const myUUID = crypto.randomUUID();
   const id = new Date().getTime() + "-" + myUUID;
@@ -57,15 +92,20 @@ export async function addImage(uid: string, data: File) {
   if (!user) throw new Error("user not found");
 
   const body = new Uint8Array(await data.arrayBuffer());
+
+  // Cloudinaryにアップロード
+  const imageUrl = await uploadToCloudinary(body);
+
   const image: Image = {
     id,
     uid,
-    data: body,
+    // data: body,
+    url: imageUrl,
     type: data.type,
     createdAt: new Date(),
     updatedAt: new Date(),
   };
-  await kv.set(["images", uid, id], image);
+  await kv.set(["images2", uid, id], image);
 
   const timelineImage: TimelineImage = {
     id,
@@ -74,12 +114,12 @@ export async function addImage(uid: string, data: File) {
     avatarUrl: user.avatarUrl,
     createdAt: new Date(),
   };
-  await kv.set(["timeline", id], timelineImage);
+  await kv.set(["timeline2", id], timelineImage);
 }
 
 export async function listGlobalTimelineImage(reverse = false) {
   const iter = await kv.list<TimelineImage>(
-    { prefix: ["timeline"] },
+    { prefix: ["timeline2"] },
     { reverse },
   );
   const images: TimelineImage[] = [];
@@ -90,23 +130,27 @@ export async function listGlobalTimelineImage(reverse = false) {
 }
 
 export async function listImage(uid: string, reverse = false) {
-  const iter = await kv.list<Image>({ prefix: ["images", uid] }, { reverse });
+  const iter = await kv.list<Image>({ prefix: ["images2", uid] }, { reverse });
   const images: Image[] = [];
   for await (const item of iter) {
+    item.value.data = await downloadImage(item.value.url);
     images.push(item.value);
   }
   return images;
 }
 
 export async function getImage(uid: string, id: string) {
-  const res = await kv.get<Image>(["images", uid, id]);
+  const res = await kv.get<Image>(["images2", uid, id]);
+  if (res.value) {
+    res.value.data = await downloadImage(res.value.url);
+  }
   return res.value;
 }
 
 export async function deleteImage(uid: string, id: string) {
   await kv
     .atomic()
-    .delete(["images", uid, id])
-    .delete(["timeline", id])
+    .delete(["images2", uid, id])
+    .delete(["timeline2", id])
     .commit();
 }

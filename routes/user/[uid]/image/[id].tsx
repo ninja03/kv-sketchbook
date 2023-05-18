@@ -1,7 +1,8 @@
 import { Handlers, PageProps } from "$fresh/server.ts";
 import { Head } from "$fresh/runtime.ts";
-import { deleteImage, getUserById, getUserBySession } from "🛠️/db.ts";
+import { deleteImage, getImage, getUserById, getUserBySession } from "🛠️/db.ts";
 import { State, User } from "🛠️/types.ts";
+import IconEdit from "https://deno.land/x/tabler_icons_tsx@0.0.3/tsx/edit.tsx";
 import IconTrash from "https://deno.land/x/tabler_icons_tsx@0.0.3/tsx/trash.tsx";
 import { Header } from "🧱/Header.tsx";
 import { APP_NAME } from "🛠️/const.ts";
@@ -25,12 +26,17 @@ export const handler: Handlers<Data, State> = {
       return new Response("Not Found", { status: 404 });
     }
 
+
+    const image = await getImage(pageUser.id, ctx.params.id);
+    const updatedAt = image!.updatedAt;
+
     if (!ctx.state.session) {
       return ctx.render({
         loginUser: null,
         pageUser,
         id: ctx.params.id,
         imageUrl,
+        updatedAt
       });
     }
     const user = await getUserBySession(ctx.state.session);
@@ -40,6 +46,7 @@ export const handler: Handlers<Data, State> = {
       pageUser,
       id: ctx.params.id,
       imageUrl,
+      updatedAt
     });
   },
   async POST(req, ctx) {
@@ -55,6 +62,10 @@ export const handler: Handlers<Data, State> = {
     }
     if (method === "DELETE") {
       return remove(user.id, ctx.params.id);
+    }
+    if (method === "EDIT") {
+      const { pathname } = new URL(req.url);
+      return Response.redirect("http://localhost:8000/edit/" + ctx.params.id);
     }
     return new Response("Bad Request", { status: 400 });
   },
@@ -73,6 +84,7 @@ interface Data {
   id: string;
   loginUser: User | null;
   pageUser: User;
+  updatedAt: Date;
 }
 export default function Home(props: PageProps<Data>) {
   const pageUser = props.data.pageUser;
@@ -108,6 +120,7 @@ export default function Home(props: PageProps<Data>) {
           ]}
         />
       </div>
+      <div class="p-2">更新日 {props.data?.updatedAt.toLocaleString()}</div>
       <img
         src={props.data?.imageUrl}
         class="w-full bg-white rounded my-4"
@@ -125,23 +138,43 @@ export default function Home(props: PageProps<Data>) {
       </div>
       {(admin || (pageUser.id === loginUser?.id)) &&
         (
-          <form
-            action={`/user/${props.params.uid}/image/${props.data?.id}`}
-            method="POST"
-            class="mt-8 flex justify-center"
-          >
-            <input type="hidden" name="_method" value="DELETE" />
-            <button
-              type="submit"
-              class="flex items-center gap-1  text-gray-500 hover:text-red-500"
+          <>
+            <form
+              action={`/user/${props.params.uid}/image/${props.data?.id}`}
+              method="POST"
+              class="mt-8 flex justify-center"
             >
-              <IconTrash
-                class="w-6 h-6"
-                alt="Remove"
-              />
-              Remove this image
-            </button>
-          </form>
+              <input type="hidden" name="_method" value="DELETE" />
+              <button
+                type="submit"
+                class="flex items-center gap-1  text-gray-500 hover:text-red-500"
+              >
+                <IconTrash
+                  class="w-6 h-6"
+                  alt="Remove"
+                />
+                Remove this image
+              </button>
+            </form>
+
+            <form
+              action={`/user/${props.params.uid}/image/${props.data?.id}`}
+              method="POST"
+              class="mt-8 flex justify-center"
+              >
+              <input type="hidden" name="_method" value="EDIT" />
+              <button
+                type="submit"
+                class="flex items-center gap-1  text-gray-500 hover:text-red-500"
+              >
+                <IconEdit
+                  class="w-6 h-6"
+                  alt="Edit"
+                />
+                Edit this image
+              </button>
+            </form>
+          </>
         )}
     </>
   );
