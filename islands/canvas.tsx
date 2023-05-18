@@ -42,7 +42,7 @@ export default function Canvas(props: { uid: string, imageId?: string }) {
         img.src = URL.createObjectURL(blob);
       }
     })()
-  }, []);
+  }, [width, height]);
 
   const down = (e: PointerEvent) => {
     (e.target as HTMLCanvasElement).setPointerCapture(e.pointerId);
