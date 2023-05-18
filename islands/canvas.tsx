@@ -11,6 +11,8 @@ export default function Canvas(props: { uid: string, imageId?: string }) {
   const [density, setDensity] = useState(1);
   const [penSize, setPenSize] = useState(2);
   const [imageDataList, setImageDataList] = useState<Uint8ClampedArray[]>([]);
+  const [width, setWidth] = useState(200);
+  const [height, setHeight] = useState(200);
 
   const pallete = [
     "#000000",
@@ -177,12 +179,17 @@ export default function Canvas(props: { uid: string, imageId?: string }) {
     <div>
       <div class="flex flex-col border-2 border-green-400 rounded shadow-xl">
         <input type="color" value={color} ref={penColorRef} onChange={changeColor}></input>
+        <div class="flex mx-auto mb-2">
+          <input type="text" value={width} size={1} onChange={(e: any) => setWidth(e.target.value)}/>
+          <span class="ml-2 mr-2">x</span>
+          <input type="text" value={height} size={1} onChange={(e: any) => setHeight(e.target.value)}/>
+        </div>
         <canvas
           ref={canvasRef}
           class="bg-green-200 touch-none image-crisp"
           style="image-rendering: pixelated; touch-action: none;"
-          width={2000}
-          height={2000}
+          width={width}
+          height={height}
           onPointerDown={down}
           onPointerUp={up}
           onPointerMove={move}
