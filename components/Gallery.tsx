@@ -9,6 +9,7 @@ export function Gallery(props: { images: Image[]; uid: string }) {
           <a href={`/user/${props.uid}/image/${image.id}`}>
             <div class="flex flex-col  sm:items-end gap-2">
               <img
+                style="image-rendering: pixelated;"
                 class="mt-8 bg-white rounded shadow hover:shadow-lg transition-shadow w-full sm:w-[350px]"
                 src={url}
                 width="350"
