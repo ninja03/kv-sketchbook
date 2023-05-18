@@ -73,7 +73,7 @@ export async function updateImage(uid: string, id: string, data: File) {
     updatedAt: new Date(),
   };
 
-  await kv.set(["images", uid, id], image);
+  await kv.set(["images2", uid, id], image);
 
   // const timelineImage: TimelineImage = {
   //   id,
