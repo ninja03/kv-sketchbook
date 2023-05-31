@@ -13,8 +13,8 @@ export interface User {
 export interface Image {
   id: string;
   uid: string;
-  data?: Uint8Array;
-  url: string;
+  // data: Uint8Array;
+  // url: string;
   type: string;
   createdAt: Date;
   updatedAt: Date;
